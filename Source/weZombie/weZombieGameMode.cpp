@@ -4,6 +4,7 @@
 #include "weZombieGameMode.h"
 #include "weZombiePlayerController.h"
 #include "weZombieCharacter.h"
+#include "HUD/weZombieGameHUD.h"
 
 AweZombieGameMode::AweZombieGameMode()
 {
@@ -16,4 +17,6 @@ AweZombieGameMode::AweZombieGameMode()
 	{
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
+
+	HUDClass = AweZombieGameHUD::StaticClass();
 }
