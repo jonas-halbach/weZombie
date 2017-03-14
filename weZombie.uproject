@@ -5,9 +5,12 @@
 	"Description": "",
 	"Modules": [
 		{
-      "Name": "weZombie",
+			"Name": "weZombie",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
 		}
 	]
 }
