@@ -22,6 +22,7 @@ protected:
 	void OnMouseDown();
 	void OnMouseUp();
 	void OnMouseMove();
+	void OnRightMouseDown();
 	void OnTouchDown(const ETouchIndex::Type FingerIndex, const FVector Location);
 	void SetNewMoveDestination(const FVector DestLocation);
 	void GetCurrentMousePosition(FVector2D &mousePos);

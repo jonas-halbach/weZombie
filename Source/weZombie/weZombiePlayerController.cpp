@@ -5,6 +5,7 @@
 #include "AI/Navigation/NavigationSystem.h"
 #include "Runtime/Engine/Classes/Components/DecalComponent.h"
 #include "Kismet/HeadMountedDisplayFunctionLibrary.h"
+#include "Character/StandardZombiePlayerController.h"
 #include "weZombieCharacter.h"
 
 //UPROPERTY(Category = "Visuals")
@@ -29,8 +30,10 @@ void AweZombiePlayerController::SetupInputComponent()
 
 	LocalPlayer = Cast<ULocalPlayer>(Player);
 
-	InputComponent->BindAction("SetDestination", EInputEvent::IE_Pressed, this, &AweZombiePlayerController::OnMouseDown);
-	InputComponent->BindAction("SetDestination", EInputEvent::IE_Released, this, &AweZombiePlayerController::OnMouseUp);
+	InputComponent->BindAction("SelectActors", EInputEvent::IE_Pressed, this, &AweZombiePlayerController::OnMouseDown);
+	InputComponent->BindAction("SelectActors", EInputEvent::IE_Released, this, &AweZombiePlayerController::OnMouseUp);
+
+	InputComponent->BindAction("SetDestination", EInputEvent::IE_Pressed, this, &AweZombiePlayerController::OnRightMouseDown);
 
 	// support touch devices 
 	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &AweZombiePlayerController::OnTouchDown);
@@ -66,15 +69,6 @@ void AweZombiePlayerController::OnMouseDown()
 	GetCurrentMousePosition(mousePos);
 	playerControllerStatus.MouseDown(mousePos);
 
-	FHitResult Hit;
-	GetHitResultUnderCursor(ECC_Visibility, false, Hit);
-
-	if (Hit.bBlockingHit)
-	{
-		// We hit something, move there
-		this->SetNewMoveDestination(Hit.ImpactPoint);
-	}
-
 	//UE_LOG("MyLog", Warning, TEXT("MyCharacter's Health is %f"), MyCharacter->Health);
 
 	//ClientMessage("MousePos: " + FString::SanitizeFloat(MousePos.X) + ", " + FString::SanitizeFloat(MousePos.Y));
@@ -82,7 +76,6 @@ void AweZombiePlayerController::OnMouseDown()
 
 	//UE_LOG(LogClass, Warning, TEXT("My Message"));
 	UE_LOG(LogClass, Warning, TEXT("My message from new Mouse_PlayerController"));
-
 }
 
 void AweZombiePlayerController::OnMouseMove()
@@ -102,20 +95,36 @@ void AweZombiePlayerController::OnTouchDown(const ETouchIndex::Type FingerIndex,
 
 }
 
+void AweZombiePlayerController::OnRightMouseDown()
+{
+	FHitResult Hit;
+	GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+
+	if (Hit.bBlockingHit)
+	{
+		// We hit something, move there
+		this->SetNewMoveDestination(Hit.ImpactPoint);
+	}
+
+}
+
 void AweZombiePlayerController::SetNewMoveDestination(const FVector DestLocation)
 {
+	UNavigationSystem* const NavSys = GetWorld()->GetNavigationSystem();
 	for(int i = 0; i < selectedPawns.Num(); i++)
 	{
-		TArray<UActorComponent*> characterMovement;
-		selectedPawns[i]->GetComponents(characterMovement);
-		if (characterMovement.Num() > 0)
-		{
-			///!!!!Attention!!!! This will not work this way, because playercontroller just controls one pawn!!!!!!
-			UNavigationSystem* const NavSys = GetWorld()->GetNavigationSystem();
-			float const Distance = FVector::Dist(DestLocation, selectedPawns[i]->GetActorLocation());
+		///!!!!Attention!!!! This will not work this way, because playercontroller just controls one pawn!!!!!!
+		float const Distance = FVector::Dist(DestLocation, selectedPawns[i]->GetActorLocation());
 
-			// We need to issue move command only if far enough in order for walk animation to play correctly
-			if (NavSys && (Distance > 120.0f))
+		// We need to issue move command only if far enough in order for walk animation to play correctly
+		if (NavSys && (Distance > 120.0f))
+		{
+			AStandardZombiePlayerController* controller = Cast<AStandardZombiePlayerController>(selectedPawns[i]->GetController());
+			if (controller != NULL)
+			{
+				NavSys->SimpleMoveToLocation(controller, DestLocation);
+			}
+			else
 			{
 				NavSys->SimpleMoveToLocation(this, DestLocation);
 			}

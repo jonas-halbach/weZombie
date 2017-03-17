@@ -26,10 +26,12 @@ void AweZombieGameHUD::DrawHUD()
 			FIntRect selectionRect;
 
 			playerController->GetSelectionRect(selectionRect);
+			
 
 			TArray<APawn *> selectedPawns;
 
 			GetActorsInSelectionRectangle(selectionRect.Min, selectionRect.Max, selectedPawns);
+			playerController->AddCurrentSelection(selectedPawns);
 
 			int width = selectionRect.Width();
 			int height = selectionRect.Height();
