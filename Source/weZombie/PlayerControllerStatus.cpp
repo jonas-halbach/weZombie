@@ -3,11 +3,6 @@
 #include "weZombie.h"
 #include "PlayerControllerStatus.h"
 
-PlayerControllerStatus::PlayerControllerStatus()
-{
-	mouseIsDown = false;
-}
-
 PlayerControllerStatus::~PlayerControllerStatus()
 {
 }
@@ -62,3 +57,15 @@ void PlayerControllerStatus::MouseUp()
 	mouseRect = FIntRect();
 	mouseIsDown = false;
 }
+
+
+void PlayerControllerStatus::SetSelectionStatus(ACTION_PARTICIPATION membersWhoParticipate)
+{
+	this->whoParticipates = membersWhoParticipate;
+}
+
+ACTION_PARTICIPATION PlayerControllerStatus::WhoParticipates()
+{
+	return this->whoParticipates;
+}
+
