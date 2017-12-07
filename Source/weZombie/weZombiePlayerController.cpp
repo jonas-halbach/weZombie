@@ -5,8 +5,8 @@
 #include "AI/Navigation/NavigationSystem.h"
 #include "Runtime/Engine/Classes/Components/DecalComponent.h"
 #include "Kismet/HeadMountedDisplayFunctionLibrary.h"
-#include "Character/StandardZombiePlayerController.h"
 #include "weZombieCharacter.h"
+#include "Character/StandardZombiePlayerController.h"
 
 //UPROPERTY(Category = "Visuals")
 //AActor mouseSelectionBox;
@@ -22,7 +22,6 @@ AweZombiePlayerController::AweZombiePlayerController()
 	UE_LOG(LogClass, Warning, TEXT("Create PlayerController"));
 }
 
-
 void AweZombiePlayerController::SetupInputComponent()
 {
 	// set up gameplay key bindings
@@ -35,46 +34,24 @@ void AweZombiePlayerController::SetupInputComponent()
 
 	InputComponent->BindAction("SetDestination", EInputEvent::IE_Pressed, this, &AweZombiePlayerController::OnRightMouseDown);
 
+	InputComponent->BindAction("SelectionState1", EInputEvent::IE_Pressed, this, &AweZombiePlayerController::SetPlayerSelectionState1);
+	InputComponent->BindAction("SelectionState1", EInputEvent::IE_Released, this, &AweZombiePlayerController::UnsetPlayerSelectionState1);
+
+	InputComponent->BindAction("SelectionState2", EInputEvent::IE_Pressed, this, &AweZombiePlayerController::SetPlayerSelectionState2);
+	InputComponent->BindAction("SelectionState2", EInputEvent::IE_Released, this, &AweZombiePlayerController::UnsetPlayerSelectionState2);
+
+	InputComponent->BindAction("SelectionState3", EInputEvent::IE_Pressed, this, &AweZombiePlayerController::SetPlayerSelectionState3);
+	InputComponent->BindAction("SelectionState3", EInputEvent::IE_Released, this, &AweZombiePlayerController::UnsetPlayerSelectionState3);
 	// support touch devices 
 	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &AweZombiePlayerController::OnTouchDown);
-
 }
 
 void AweZombiePlayerController::OnMouseDown()
 {
-	/////
-	///// Something like the following goes here:
-	///// AHUD.GetActorsInSelectionRectangle
-	/////
-	///// maybe check:  https://www.youtube.com/watch?v=yCqsbXS9yRg
-	///// and: https://wiki.unrealengine.com/HUD,_Canvas,_Code_Sample_of_800%2B_Lines,_Create_Buttons_%26_Draw_Materials
-	/////
-	
-	//FVector MousePos;
-	/*FVector MouseDir;
-
-	float x;
-	float y;
-
-	bool success = this->DeprojectMousePositionToWorld(MousePos, MouseDir);
-
-	if (success)
-	{
-		this->SetActorLocation(MousePos, false);
-	}
-	*/
-
-
 	FVector2D mousePos;
 	GetCurrentMousePosition(mousePos);
 	playerControllerStatus.MouseDown(mousePos);
 
-	//UE_LOG("MyLog", Warning, TEXT("MyCharacter's Health is %f"), MyCharacter->Health);
-
-	//ClientMessage("MousePos: " + FString::SanitizeFloat(MousePos.X) + ", " + FString::SanitizeFloat(MousePos.Y));
-	//TCHAR[] message = TCHAR[1000];
-
-	//UE_LOG(LogClass, Warning, TEXT("My Message"));
 	UE_LOG(LogClass, Warning, TEXT("My message from new Mouse_PlayerController"));
 }
 
@@ -105,30 +82,56 @@ void AweZombiePlayerController::OnRightMouseDown()
 		// We hit something, move there
 		this->SetNewMoveDestination(Hit.ImpactPoint);
 	}
-
 }
 
-void AweZombiePlayerController::SetNewMoveDestination(const FVector DestLocation)
+void AweZombiePlayerController::SetNewMoveDestination(const FVector destLocation)
 {
-	UNavigationSystem* const NavSys = GetWorld()->GetNavigationSystem();
-	for(int i = 0; i < selectedPawns.Num(); i++)
+	if (playerControllerStatus.WhoParticipates() == ACTION_PARTICIPATION::ME)
 	{
-		///!!!!Attention!!!! This will not work this way, because playercontroller just controls one pawn!!!!!!
-		float const Distance = FVector::Dist(DestLocation, selectedPawns[i]->GetActorLocation());
+		SetNewMoveDestinationForMyPawn(destLocation);
+	}
+	else if (playerControllerStatus.WhoParticipates() == ACTION_PARTICIPATION::SELECTION)
+	{
+		SetNewMoveDestinationForSelectedPawns(destLocation);
+	}
+	else
+	{
+		SetNewMoveDestinationForMyPawn(destLocation);
+		SetNewMoveDestinationForSelectedPawns(destLocation);
+	}
+}
+
+void AweZombiePlayerController::SetNewMoveDestinationForSelectedPawns(const FVector destLocation)
+{
+	UNavigationSystem const *navSys = GetWorld()->GetNavigationSystem();
+	for (int i = 0; i < selectedPawns.Num(); i++)
+	{
+		float const Distance = FVector::Dist(destLocation, selectedPawns[i]->GetActorLocation());
 
 		// We need to issue move command only if far enough in order for walk animation to play correctly
-		if (NavSys && (Distance > 120.0f))
+		if (navSys && (Distance > 120.0f))
 		{
 			AStandardZombiePlayerController* controller = Cast<AStandardZombiePlayerController>(selectedPawns[i]->GetController());
 			if (controller != NULL)
 			{
-				NavSys->SimpleMoveToLocation(controller, DestLocation);
-			}
-			else
-			{
-				NavSys->SimpleMoveToLocation(this, DestLocation);
+				controller->MoveToLocation(destLocation, navSys);
+				//navSys->SimpleMoveToLocation(controller, destLocation);
 			}
 		}
+	}
+}
+
+
+void AweZombiePlayerController::SetNewMoveDestinationForMyPawn(const FVector destLocation)
+{
+	UNavigationSystem const*navSys = GetWorld()->GetNavigationSystem();
+	APawn *const pawn = GetPawn();
+	float const distance = FVector::Dist(destLocation, pawn->GetActorLocation());
+
+	// We need to issue move command only if far enough in order for walk animation to play correctly
+	if (navSys && (distance > 120.0f))
+	{
+		navSys->SimpleMoveToLocation(this, destLocation);
 	}
 }
 
@@ -163,7 +166,49 @@ void AweZombiePlayerController::GetCurrentMousePosition(FVector2D &mousePos)
 	}
 }
 
-void AweZombiePlayerController::AddCurrentSelection(TArray<APawn *> &currentSelection)
+void AweZombiePlayerController::AddCurrentSelection(TArray<APawn *> &currentSelection, bool add)
 {
-	selectedPawns = currentSelection;
+	if (add)
+	{
+		selectedPawns.Append(currentSelection);
+	}
+	else
+	{
+		selectedPawns = currentSelection;
+	}
+}
+
+void AweZombiePlayerController::SelectPawns(TArray<APawn *> &currentSelection)
+{
+	this->AddCurrentSelection(currentSelection, playerControllerStatus.GetShallAddToSelection());
+}
+
+void AweZombiePlayerController::SetPlayerSelectionState1()
+{
+	playerControllerStatus.SetSelectionStatus(ACTION_PARTICIPATION::ME);
+}
+
+void AweZombiePlayerController::UnsetPlayerSelectionState1()
+{
+	//playerControllerStatus.SetShallAddPawnsToSelectionStatus(false);
+}
+
+void AweZombiePlayerController::SetPlayerSelectionState2()
+{
+	playerControllerStatus.SetSelectionStatus(ACTION_PARTICIPATION::SELECTION);
+}
+
+void AweZombiePlayerController::UnsetPlayerSelectionState2()
+{
+	//playerControllerStatus.SetShallAddPawnsToSelectionStatus(false);
+}
+
+void AweZombiePlayerController::SetPlayerSelectionState3()
+{
+	playerControllerStatus.SetSelectionStatus(ACTION_PARTICIPATION::BOTH);
+}
+
+void AweZombiePlayerController::UnsetPlayerSelectionState3()
+{
+	//playerControllerStatus.SetShallAddPawnsToSelectionStatus(false);
 }

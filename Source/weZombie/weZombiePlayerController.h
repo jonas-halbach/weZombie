@@ -11,21 +11,32 @@ class AweZombiePlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
-	AweZombiePlayerController();
 	bool IsMouseDown();
 	void GetSelectionRect(FIntRect &selectionRect);
+	void SelectPawns(TArray<APawn *> &currentSelectedPawns);
 
-	void AddCurrentSelection(TArray<APawn *> &currentSelectedPawns);
 
 protected:
+	AweZombiePlayerController();
 	void SetupInputComponent();
 	void OnMouseDown();
 	void OnMouseUp();
 	void OnMouseMove();
 	void OnRightMouseDown();
 	void OnTouchDown(const ETouchIndex::Type FingerIndex, const FVector Location);
+
 	void SetNewMoveDestination(const FVector DestLocation);
+	void SetNewMoveDestinationForSelectedPawns(const FVector DestLocation);
+	void SetNewMoveDestinationForMyPawn(const FVector DestLocation);
 	void GetCurrentMousePosition(FVector2D &mousePos);
+	void AddCurrentSelection(TArray<APawn *> &currentSelectedPawns, bool add);
+	void SetPlayerSelectionState1();
+	void UnsetPlayerSelectionState1();
+	void SetPlayerSelectionState2();
+	void UnsetPlayerSelectionState2();
+	void SetPlayerSelectionState3();
+	void UnsetPlayerSelectionState3();
+
 	virtual void ProcessPlayerInput(float deltaTime, bool isPaused) override;
 
 	PlayerControllerStatus playerControllerStatus;
@@ -33,6 +44,4 @@ protected:
 
 	TArray<APawn *> selectedPawns;
 };
-
-
 
