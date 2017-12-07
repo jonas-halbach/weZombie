@@ -4,12 +4,6 @@
 #include "StandardZombiePlayerController.h"
 #include "StandardZombie.h"
 
-AStandardZombiePlayerController::AStandardZombiePlayerController(class FObjectInitializer const & ObjInit) : Super(ObjInit)
-{
-	bWantsPlayerState = true;
-	PrimaryActorTick.bCanEverTick = true;
-}
-
 void AStandardZombiePlayerController::Possess(class APawn *inPawn)
 {
 	Super::Possess(inPawn);
@@ -21,4 +15,12 @@ void AStandardZombiePlayerController::BeginInactiveState()
 	Super::BeginInactiveState();
 }
 
+void AStandardZombiePlayerController::MoveToLocation(const FVector destLocation, UNavigationSystem const *navSys)
+{
+	FVector biasVector = FVector4(1, 1, 1, 1);
+	biasVector *= MAX_BIAS * (MAX_INTELLIGENCE - intelligence);
 
+	FVector biassedDestLocation = destLocation + biasVector;
+
+	navSys->SimpleMoveToLocation(this, biassedDestLocation);
+}
