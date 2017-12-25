@@ -2,8 +2,8 @@
 
 #include "weZombie.h"
 #include "weZombieGameMode.h"
-#include "weZombiePlayerController.h"
-#include "weZombieCharacter.h"
+#include "Character/weZombiePlayerController.h"
+#include "Character/weZombieCharacter.h"
 #include "HUD/weZombieGameHUD.h"
 
 AweZombieGameMode::AweZombieGameMode()
