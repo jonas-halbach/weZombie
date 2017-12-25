@@ -15,10 +15,20 @@ void AStandardZombiePlayerController::BeginInactiveState()
 	Super::BeginInactiveState();
 }
 
+void AStandardZombiePlayerController::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	intelligence -= DeltaSeconds * intelligenceDrainPerSecond;
+
+	intelligence = intelligence > 0 ? intelligence : 0;
+}
+
 void AStandardZombiePlayerController::MoveToLocation(const FVector destLocation, UNavigationSystem const *navSys)
 {
-	FVector biasVector = FVector4(1, 1, 1, 1);
-	biasVector *= MAX_BIAS * (MAX_INTELLIGENCE - intelligence);
+	float maxBiasByIntelligence = MAX_BIAS * (MAX_INTELLIGENCE - intelligence) / MAX_INTELLIGENCE;
+	float xBias = FMath::RandRange(0.0f, 1.0f) * maxBiasByIntelligence;
+	float yBias = FMath::RandRange(0.0f, 1.0f) * maxBiasByIntelligence;
+	FVector biasVector = FVector4(xBias, yBias, 1, 1);
 
 	FVector biassedDestLocation = destLocation + biasVector;
 
